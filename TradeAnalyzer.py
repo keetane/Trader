@@ -22,18 +22,36 @@ st.write(info.info['longName'])
 
 
 # 1分足のデータを取得
-yesterday = datetime.now() - timedelta(4)
+yesterday = datetime.now() - timedelta(10)
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 today_str = datetime.now().strftime('%Y-%m-%d')
 
+data = yf.download(
+    tickers = tickers,
+    start = yesterday_str,
+    )
+data['delta'] = data['Close'].diff()
+data['%'] = data['Close'].pct_change() * 100
+data['Close_-1'] = data['Close'].shift()
+
+
 df = yf.download(tickers=tickers,
-                 start=yesterday_str,
-                 end=today_str,
+                #  start=yesterday_str,
+                #  end=today_str,
                  interval='1m',
-                 period = '5d'
+                #  period = '5d'
                  )
 df['time'] = [t.time() for t in df.index]
 df['day'] = [t.date() for t in df.index]
+
+# close間の差を計算
+df['delta'] = df['Close'].diff()
+df['%'] = df['Close'].pct_change() * 100
+
+# 前日との差を計算
+df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
+df['delta_yd'] = df['Close'] - df['Close_-1']
+df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
 
 # 9時と12時30分の取引量をリセット
 morning = time(9,0)
@@ -85,8 +103,10 @@ df = rsi(df)
 
 # st.write(df.head())
 
-df = df[-302:]
-st.dataframe(df.head(1))
+df = df[df['day']==datetime.now().date()]
+st.dataframe(df.tail(1))
+st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
+
 
 
 # figを定義

@@ -6,8 +6,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # サイドバーでパラメータを入力
-tickers = st.sidebar.text_input('Tickers', '6098') + '.T'
-SMA_short = st.sidebar.number_input('SMA_short', value=10)
+tickers = st.sidebar.text_input('Tickers', '6857') + '.T'
+SMA_short = st.sidebar.number_input('SMA_short', value=5)
 SMA_middle = st.sidebar.number_input('SMA_middle', value=25)
 SMA_long = st.sidebar.number_input('SMA_long', value=75)
 st.sidebar.write('6098 リクルート')
@@ -52,6 +52,7 @@ df['%'] = df['Close'].pct_change() * 100
 df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
 df['delta_yd'] = df['Close'] - df['Close_-1']
 df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
+
 
 # 9時と12時30分の取引量をリセット
 morning = time(9,0)
@@ -103,8 +104,16 @@ df = rsi(df)
 
 # st.write(df.head())
 
-df = df[df['day']==datetime.now().date()]
+# 日付選択
+when = st.selectbox(
+    'Select date',
+    df['day'].unique(),
+    index=None,
+)
+
+df = df[df['day']==when]
 st.dataframe(df.tail(1))
+st.write('株価終値 ' + str(df['Close'].iloc[-1]))
 st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
 
 

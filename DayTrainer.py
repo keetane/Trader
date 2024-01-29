@@ -113,8 +113,8 @@ when = st.selectbox(
 
 df = df[df['day']==when]
 st.dataframe(df.tail(1))
-st.write('株価終値 ' + str(df['Close'].iloc[-1]))
-st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
+# st.write('株価終値 ' + str(df['Close'].iloc[-1]))
+# st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
 
 
 

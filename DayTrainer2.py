@@ -9,12 +9,17 @@ ticker_dict = {
     'アドバンテスト' : '6857',
     'ソシオネクスト' : '6526',
     'リクルート' : '6098',
+    'QPS' : '5595',
     'ルネサス' : '6723',
     'レーザーテック' : '6920',
     'ディスコ' : '6146',
     '日経レバダブル' : '1579',
     'さくらインターネット' : '3778',
     '三菱UFJ' : '8306',
+    'SBD': '9984',
+    '名村造船所' : '7014',
+    '川崎汽船' : '9107',
+    '日本郵船' : '9101',
 }
 
 
@@ -30,7 +35,7 @@ tickers = str(ticker_dict.get(tickers)) + '.T'
 # 基本情報取得
 info = yf.Ticker(tickers)
 st.title('Day Trainer')
-st.write(info.info['longName'])
+# st.write(info.info['longName'])
 
 
 # 1分足のデータを取得
@@ -114,6 +119,21 @@ df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
 # # RSIを算出
 # df = rsi(df)
 
+# # 保存データとの結合
+# try:
+#     df = pd.concat(
+#         [pd.read_csv(
+#             './data/' + ticker + '.csv',
+#             parse_dates=['Datetime'], 
+#             index_col='Datetime'
+#             ), 
+#         df])
+# except:
+#     pass
+
+# # データを保存
+# df.drop_duplicates().to_csv('./data/' + ticker + '.csv')
+
 # st.write(df.head())
 
 # 日付選択
@@ -124,10 +144,9 @@ when = st.selectbox(
 )
 
 df = df[df['day']==when]
-st.dataframe(df.tail(1))
-# st.write('株価終値 ' + str(df['Close'].iloc[-1]))
+st.write('株価終値 ' + str(df['Close'].iloc[-1]))
 # st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
-
+df.index = pd.to_datetime(df.index)
 df = df.between_time('09:00', '10:00')
 
 # My Art! we define some variables in order to make the code undertandable
@@ -209,16 +228,34 @@ fig = go.Figure(
     layout=go.Layout(
         xaxis=dict(title='time', rangeslider=dict(visible=False)),
         title="Candles over time",
-        updatemenus= [dict(type="buttons", buttons=[play_button, pause_button])],
+                updatemenus= [
+            dict(
+                type="buttons", 
+                buttons=[play_button, pause_button],
+                direction = 'right',
+                y=1,
+                x=1,
+                xanchor='right',
+                yanchor='top',
+                )],
         sliders= [sliders_dict]
     ),
+
     frames=[
         go.Frame(data=[first_i_candles(i)], name=f"{i}") # name, I imagine, is used to bind to frame i :) 
         for i in range(len(df))
     ],
 
 )
-
+# 開始値を取得
+start_value = df['Open'].iloc[0]
+# 最大値と最小値の差を計算
+max_diff = df['High'].max() - df['Low'].min()
+# 開始値から+-最大値幅を計算
+lower_bound = start_value - max_diff
+upper_bound = start_value + max_diff
+# y軸の範囲を設定
+fig.update_yaxes(range=[lower_bound, upper_bound])
 # fig.show()
 
 st.plotly_chart(fig)

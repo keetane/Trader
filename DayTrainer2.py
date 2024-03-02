@@ -1,3 +1,4 @@
+#%%
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -16,15 +17,19 @@ ticker_dict = {
     '日経レバダブル' : '1579',
     'さくらインターネット' : '3778',
     '三菱UFJ' : '8306',
-    'SBD': '9984',
+    'SBG': '9984',
     '名村造船所' : '7014',
     '川崎汽船' : '9107',
     '日本郵船' : '9101',
+    '' : '',
 }
 
+st.title('Day Trainer')
+
+#%%
 
 # サイドバーでパラメータを入力
-tickers = st.sidebar.selectbox('Tickers',
+tickers = st.selectbox('Tickers',
              options=ticker_dict.keys())
 tickers = str(ticker_dict.get(tickers)) + '.T'
 
@@ -34,7 +39,6 @@ tickers = str(ticker_dict.get(tickers)) + '.T'
 
 # 基本情報取得
 info = yf.Ticker(tickers)
-st.title('Day Trainer')
 # st.write(info.info['longName'])
 
 
@@ -233,8 +237,8 @@ fig = go.Figure(
                 type="buttons", 
                 buttons=[play_button, pause_button],
                 direction = 'right',
-                y=1,
-                x=1,
+                y=1.1,
+                x=0.1,
                 xanchor='right',
                 yanchor='top',
                 )],
@@ -256,6 +260,8 @@ lower_bound = start_value - max_diff
 upper_bound = start_value + max_diff
 # y軸の範囲を設定
 fig.update_yaxes(range=[lower_bound, upper_bound])
+fig.update_layout(width=500)
+
 # fig.show()
 
 st.plotly_chart(fig)

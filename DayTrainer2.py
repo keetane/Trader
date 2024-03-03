@@ -28,10 +28,12 @@ st.title('Day Trainer')
 
 #%%
 
-# サイドバーでパラメータを入力
+# パラメータを入力
 tickers = st.selectbox('Tickers',
              options=ticker_dict.keys())
 tickers = str(ticker_dict.get(tickers)) + '.T'
+interval = st.selectbox('時間軸',
+                    ['1m', '5m'])
 
 # SMA_short = st.sidebar.number_input('SMA_short', value=5)
 # SMA_middle = st.sidebar.number_input('SMA_middle', value=25)
@@ -59,8 +61,9 @@ data['Close_-1'] = data['Close'].shift()
 df = yf.download(tickers=tickers,
                 #  start=yesterday_str,
                 #  end=today_str,
-                 interval='1m',
-                #  period = '5d'
+                #  interval='1m',
+                 interval=interval,
+                 period = '5d'
                  )
 df['time'] = [t.time() for t in df.index]
 df['day'] = [t.date() for t in df.index]
@@ -146,12 +149,16 @@ when = st.selectbox(
     df['day'].unique(),
     # index=None,
 )
-
+# 前日終値の表示
 df = df[df['day']==when]
-st.write('株価終値 ' + str(df['Close'].iloc[-1]))
-# st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
-df.index = pd.to_datetime(df.index)
-df = df.between_time('09:00', '10:00')
+st.write('前日株価終値 ' + str(df['Close'].iloc[-1]))
+
+# 分足の選択
+if interval == '1m':
+    df = df.between_time('09:00', '10:00')
+else:
+    df = df.between_time('09:00', '11:30')
+
 
 # My Art! we define some variables in order to make the code undertandable
 

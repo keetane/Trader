@@ -77,14 +77,6 @@ df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
 df['delta_yd'] = df['Close'] - df['Close_-1']
 df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
 
-
-# # 9時と12時30分の取引量をリセット
-# morning = time(9,0)
-# noon = time(12,30)
-# df.loc[df['time'] == noon, 'Volume'] = 0
-# df.loc[df['time'] == morning, 'Volume'] = 0
-
-
 # # SMAを計算 
 # df["SMA_short"] = df["Close"].rolling(window=SMA_short).mean() 
 # df["SMA_middle"] = df["Close"].rolling(window=SMA_middle).mean()
@@ -156,8 +148,10 @@ st.write('前日株価終値 ' + str(df['Close'].iloc[-1]))
 # 分足の選択
 if interval == '1m':
     df = df.between_time('09:00', '10:00')
+    length = 61
 else:
     df = df.between_time('09:00', '11:30')
+    length = 31
 
 
 # My Art! we define some variables in order to make the code undertandable
@@ -218,13 +212,13 @@ sliders_dict = {
     "steps": sliders_steps,
 }
 
-initial_plot = go.Candlestick(
-    x=df.time, 
-    open=df.Open, 
-    high=df.High, 
-    low=df.Low, 
-    close=df.Close
-)
+# initial_plot = go.Candlestick(
+#     x=df.time, 
+#     open=df.Open, 
+#     high=df.High, 
+#     low=df.Low, 
+#     close=df.Close
+# )
 
 first_i_candles = lambda i: go.Candlestick(
     x=df.time, 
@@ -235,7 +229,8 @@ first_i_candles = lambda i: go.Candlestick(
 )
 
 fig = go.Figure(
-    data=[initial_plot],
+    # data=[initial_plot],
+    data=[first_i_candles(0)],
     layout=go.Layout(
         xaxis=dict(title='time', rangeslider=dict(visible=False)),
         title="Candles over time",
@@ -255,6 +250,7 @@ fig = go.Figure(
     frames=[
         go.Frame(data=[first_i_candles(i)], name=f"{i}") # name, I imagine, is used to bind to frame i :) 
         for i in range(len(df))
+
     ],
 
 )
@@ -267,6 +263,7 @@ lower_bound = start_value - max_diff
 upper_bound = start_value + max_diff
 # y軸の範囲を設定
 fig.update_yaxes(range=[lower_bound, upper_bound])
+fig.update_xaxes(range=[-1,length])
 fig.update_layout(width=500)
 
 # fig.show()

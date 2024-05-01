@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 ticker_dict = {
+    '' : '',
     'アドバンテスト' : '6857',
     'ソシオネクスト' : '6526',
     'リクルート' : '6098',
@@ -16,12 +17,14 @@ ticker_dict = {
     'ディスコ' : '6146',
     '日経レバダブル' : '1579',
     'さくらインターネット' : '3778',
-    '三菱UFJ' : '8306',
     'SBG': '9984',
     '名村造船所' : '7014',
     '川崎汽船' : '9107',
     '日本郵船' : '9101',
-    '' : '',
+    '三井E&S' : '7003',
+    '売れるネット広告社' : '9235',
+    'ispace' : '9348',
+    '住石HD' : '1514',
 }
 
 st.title('Day Trainer')
@@ -269,4 +272,3 @@ fig.update_layout(width=500)
 # fig.show()
 
 st.plotly_chart(fig)
-a = test

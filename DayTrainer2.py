@@ -5,6 +5,7 @@ import yfinance as yf
 from datetime import datetime, timedelta, time
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from random import random
 
 ticker_dict = {
     '' : '',
@@ -33,7 +34,8 @@ st.title('Day Trainer')
 
 # パラメータを入力
 tickers = st.selectbox('Tickers',
-             options=ticker_dict.keys())
+             options=ticker_dict.keys(),
+             index=1)
 tickers = str(ticker_dict.get(tickers)) + '.T'
 interval = st.selectbox('時間軸',
                     ['1m', '5m'])
@@ -264,6 +266,10 @@ max_diff = df['High'].max() - df['Low'].min()
 # 開始値から+-最大値幅を計算
 lower_bound = start_value - max_diff
 upper_bound = start_value + max_diff
+
+# lower_bound = lower_bound / 1.007
+# upper_bound = upper_bound * 1.007
+
 # y軸の範囲を設定
 fig.update_yaxes(range=[lower_bound, upper_bound])
 fig.update_xaxes(range=[-1,length])
@@ -272,3 +278,9 @@ fig.update_layout(width=500)
 # fig.show()
 
 st.plotly_chart(fig)
+
+
+#%%
+import random
+test = 128.9
+test * random.uniform(1,2)

@@ -6,28 +6,8 @@ from datetime import datetime, timedelta, time
 import plotly.graph_objects as go
 from random import random
 
-ticker_dict = {
-    '住石HD' : '1514',
-    '日経レバダブル' : '1579',
-    '霞ヶ関' : '3498',
-    'さくらインターネット' : '3778',
-    'QPS' : '5595',
-    'リクルート' : '6098',
-    'ディスコ' : '6146',
-    'ソシオネクスト' : '6526',
-    'ルネサス' : '6723',
-    'アドバンテスト' : '6857',
-    'レーザーテック' : '6920',
-    '三井E&S' : '7003',
-    '名村造船所' : '7014',
-    '東京エレクトロン' : '8035',
-    'MUFG' : '8306',
-    '日本郵船' : '9101',
-    '川崎汽船' : '9107',
-    '売れるネット広告社' : '9235',
-    'ispace' : '9348',
-    'SBG': '9984',
-}
+# tickerリストの読み込み
+ticker_dict = pd.read_csv('tickers.csv', index_col=0).to_dict()['code']
 
 st.title('Day Trainer')
 

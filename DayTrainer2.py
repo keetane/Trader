@@ -278,9 +278,3 @@ fig.update_layout(width=500)
 # fig.show()
 
 st.plotly_chart(fig)
-
-
-#%%
-import random
-test = 128.9
-test * random.uniform(1,2)

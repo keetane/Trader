@@ -1,177 +1,161 @@
+#%%
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta, time
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from random import random
 
-# サイドバーでパラメータを入力
-tickers = st.sidebar.text_input('Tickers', '6857') + '.T'
-SMA_short = st.sidebar.number_input('SMA_short', value=5)
-SMA_middle = st.sidebar.number_input('SMA_middle', value=25)
-SMA_long = st.sidebar.number_input('SMA_long', value=75)
-st.sidebar.write('6098 リクルート')
-st.sidebar.write('1579 日経レバダブル')
-st.sidebar.write('6723 ルネサス')
-st.sidebar.write('6857 アドバンテス')
+st.title('Day Trainer')
 
-# 基本情報取得
-info = yf.Ticker(tickers)
-st.title('Trade Analizer')
-st.write(info.info['longName'])
+# tickerリストの読み込み
+ticker_dict = pd.read_csv('tickers.csv', index_col=0).to_dict()['code']
 
+# 銘柄を選択
+tickers = st.selectbox('Tickers',
+             options=ticker_dict.keys(),
+             index=9)
 
-# 1分足のデータを取得
-yesterday = datetime.now() - timedelta(10)
-yesterday_str = yesterday.strftime('%Y-%m-%d')
-today_str = datetime.now().strftime('%Y-%m-%d')
+csv = '1min/' + str(ticker_dict[tickers]) + '.csv'
 
-data = yf.download(
-    tickers = tickers,
-    start = yesterday_str,
-    )
-data['delta'] = data['Close'].diff()
-data['%'] = data['Close'].pct_change() * 100
-data['Close_-1'] = data['Close'].shift()
+df = pd.read_csv(csv, index_col=0, parse_dates=True)
 
+# 日付を選択
+day = st.selectbox('day',
+             options=df['day'].unique(),
+             index=len(df['day'].unique())-1
+             )
 
-df = yf.download(tickers=tickers,
-                #  start=yesterday_str,
-                #  end=today_str,
-                 interval='1m',
-                #  period = '5d'
-                 )
-df['time'] = [t.time() for t in df.index]
-df['day'] = [t.date() for t in df.index]
+# 前日終値の表示
+df = df[df['day']==day]
+st.write('前日株価終値 ' + str(df['Close'].iloc[-1]))
 
-# close間の差を計算
-df['delta'] = df['Close'].diff()
-df['%'] = df['Close'].pct_change() * 100
+# 分足の選択
+interval = st.selectbox('時間軸',
+                    ['1m', '5m'])
+if interval == '1m':
+    df = df.between_time('09:00', '10:00')
+    length = 61
+else:
+    df = df.between_time('09:00', '11:30')
+    length = 31
 
-# 前日との差を計算
-df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
-df['delta_yd'] = df['Close'] - df['Close_-1']
-df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
+# My Art! we define some variables in order to make the code undertandable
 
+play_button = {
+    "args": [
+        None, 
+        {
+            "frame": {"duration": 2000, "redraw": True},
+            "fromcurrent": True, 
+            "transition": {"duration": 1000000000,"easing": "quadratic-in-out"}
+        }
+    ],
+    "label": "Play",
+    "method": "animate"
+}
 
-# 9時と12時30分の取引量をリセット
-morning = time(9,0)
-noon = time(12,30)
-df.loc[df['time'] == noon, 'Volume'] = 0
-df.loc[df['time'] == morning, 'Volume'] = 0
+pause_button = {
+    "args": [
+        [None], 
+        {
+            "frame": {"duration": 0, "redraw": False},
+            "mode": "immediate",
+            "transition": {"duration": 0}
+        }
+    ],
+    "label": "Pause",
+    "method": "animate"
+}
 
+sliders_steps = [
+    {"args": [
+        [0, i], # 0, in order to reset the image, i in order to plot frame i
+        {"frame": {"duration": 300, "redraw": True},
+         "mode": "immediate",
+         "transition": {"duration": 300}}
+    ],
+    "label": i,
+    "method": "animate"}
+    for i in range(len(df))      
+]
 
-# SMAを計算 
-df["SMA_short"] = df["Close"].rolling(window=SMA_short).mean() 
-df["SMA_middle"] = df["Close"].rolling(window=SMA_middle).mean()
-df["SMA_long"] = df["Close"].rolling(window=SMA_long).mean()
+sliders_dict = {
+    "active": 0,
+    "yanchor": "top",
+    "xanchor": "left",
+    "currentvalue": {
+        "font": {"size": 20},
+        "prefix": "candle:",
+        "visible": True,
+        "xanchor": "right"
+    },
+    "transition": {"duration": 300, "easing": "cubic-in-out"},
+    "pad": {"b": 10, "t": 50},
+    "len": 0.9,
+    "x": 0.1,
+    "y": 0,
+    "steps": sliders_steps,
+}
 
-def macd(df):
-    FastEMA_period = 12  # 短期EMAの期間
-    SlowEMA_period = 26  # 長期EMAの期間
-    SignalSMA_period = 9  # SMAを取る期間
-    df["MACD"] = df["Close"].ewm(span=FastEMA_period).mean() - df["Close"].ewm(span=SlowEMA_period).mean()
-    df["Signal"] = df["MACD"].rolling(SignalSMA_period).mean()
-    return df
+# initial_plot = go.Candlestick(
+#     x=df.time, 
+#     open=df.Open, 
+#     high=df.High, 
+#     low=df.Low, 
+#     close=df.Close
+# )
 
-def rsi(df):
-    # 前日との差分を計算
-    df_diff = df["Close"].diff(1)
- 
-    # 計算用のDataFrameを定義
-    df_up, df_down = df_diff.copy(), df_diff.copy()
-    
-    # df_upはマイナス値を0に変換
-    # df_downはプラス値を0に変換して正負反転
-    df_up[df_up < 0] = 0
-    df_down[df_down > 0] = 0
-    df_down = df_down * -1
-    
-    # 期間14でそれぞれの平均を算出
-    df_up_sma14 = df_up.rolling(window=14, center=False).mean()
-    df_down_sma14 = df_down.rolling(window=14, center=False).mean()
- 
-    # RSIを算出
-    df["RSI"] = 100.0 * (df_up_sma14 / (df_up_sma14 + df_down_sma14))
- 
-    return df
- 
-# MACDを計算する
-df = macd(df)
- 
-# RSIを算出
-df = rsi(df)
-
-# st.write(df.head())
-
-# 日付選択
-when = st.selectbox(
-    'Select date',
-    df['day'].unique(),
-    index=None,
+first_i_candles = lambda i: go.Candlestick(
+    x=df.time, 
+    open=df.Open[:i], 
+    high=df.High[:i], 
+    low=df.Low[:i], 
+    close=df.Close[:i]
 )
 
-df = df[df['day']==when]
-st.dataframe(df.tail(1))
-# st.write('株価終値 ' + str(df['Close'].iloc[-1]))
-# st.write('前日比 ' + str(df['delta_yd'].iloc[-1]) + '  ,  ' + str(df['%'].iloc[-1].round(2)) + ' %')
+fig = go.Figure(
+    # data=[initial_plot],
+    data=[first_i_candles(0)],
+    layout=go.Layout(
+        xaxis=dict(title='time', rangeslider=dict(visible=False)),
+        title="Candles over time",
+                updatemenus= [
+            dict(
+                type="buttons", 
+                buttons=[play_button, pause_button],
+                direction = 'right',
+                y=1.1,
+                x=0.1,
+                xanchor='right',
+                yanchor='top',
+                )],
+        sliders= [sliders_dict]
+    ),
 
+    frames=[
+        go.Frame(data=[first_i_candles(i)], name=f"{i}") # name, I imagine, is used to bind to frame i :) 
+        for i in range(len(df))
 
+    ],
 
-# figを定義
-fig = make_subplots(
-    rows=4, 
-    cols=1, 
-    shared_xaxes=True, 
-    vertical_spacing=0.05, 
-    row_width=[0.2, 0.2, 0.2, 0.7], 
-# x_title="Time"
 )
- 
-# Candlestick 
-fig.add_trace(
-    go.Candlestick(
-        x=df.time, 
-        open=df["Open"], 
-        high=df["High"], 
-        low=df["Low"], 
-        close=df["Close"], 
-        showlegend=False
-        ),
-    row=1, col=1
-)
+# 開始値を取得
+start_value = df['Open'].iloc[0]
+# 最大値と最小値の差を計算
+max_diff = df['High'].max() - df['Low'].min()
+# 開始値から+-最大値幅を計算
+lower_bound = start_value - max_diff
+upper_bound = start_value + max_diff
 
-# 移動平均線
-fig.add_trace(go.Scatter(x=df.time, y=df["SMA_short"], name="SMA_short", mode="lines"), row=1, col=1)
-fig.add_trace(go.Scatter(x=df.time, y=df["SMA_middle"], name="SMA_middle", mode="lines"), row=1, col=1)
-fig.add_trace(go.Scatter(x=df.time, y=df["SMA_long"], name="SMA_long", mode="lines"), row=1, col=1)
+# lower_bound = lower_bound / 1.007
+# upper_bound = upper_bound * 1.007
 
-# MACD
-fig.add_trace(go.Scatter(x=df.time, y=df["MACD"], mode="lines", showlegend=False), row=3, col=1)
-fig.add_trace(go.Scatter(x=df.time, y=df["Signal"], mode="lines", showlegend=False), row=3, col=1)
- 
-# RSI
-fig.add_trace(go.Scatter(x=df.time, y=df["RSI"], mode="lines", showlegend=False), row=4, col=1)
+# y軸の範囲を設定
+fig.update_yaxes(range=[lower_bound, upper_bound])
+fig.update_xaxes(range=[-1,length])
+fig.update_layout(width=500)
 
-# Volume
-fig.add_trace(
-    go.Bar(x=df.time, y=df["Volume"], showlegend=False, marker_color='orange'),
-    row=2, col=1
-)
-
-# ラベル名の設定とフォーマット変更（カンマ区切り）
-fig.update_yaxes(separatethousands=True, title_text="株価", row=1, col=1) 
-fig.update_yaxes(title_text="出来高", row=2, col=1)
-fig.update_yaxes(title_text="MACD", row=3, col=1)
-fig.update_yaxes(title_text="RSI", row=4, col=1)
-
-
-fig.update(layout_xaxis_rangeslider_visible=False) #追加
-fig.update_layout(
-    width=1000,
-    height=700,
-    xaxis=dict(dtick=1000)
-    ) # x軸の表示間隔を30ごとに設定
 # fig.show()
 
 st.plotly_chart(fig)

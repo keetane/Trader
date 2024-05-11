@@ -4,29 +4,11 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta, time
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from random import random
 
-ticker_dict = {
-    '' : '',
-    'アドバンテスト' : '6857',
-    'ソシオネクスト' : '6526',
-    'リクルート' : '6098',
-    'QPS' : '5595',
-    'ルネサス' : '6723',
-    'レーザーテック' : '6920',
-    'ディスコ' : '6146',
-    '日経レバダブル' : '1579',
-    'さくらインターネット' : '3778',
-    'SBG': '9984',
-    '名村造船所' : '7014',
-    '川崎汽船' : '9107',
-    '日本郵船' : '9101',
-    '三井E&S' : '7003',
-    '売れるネット広告社' : '9235',
-    'ispace' : '9348',
-    '住石HD' : '1514',
-}
+# tickerリストの読み込み
+ticker_dict = pd.read_csv('tickers.csv', index_col=0).to_dict()['code']
+
 
 st.title('Day Trainer')
 
@@ -35,7 +17,7 @@ st.title('Day Trainer')
 # パラメータを入力
 tickers = st.selectbox('Tickers',
              options=ticker_dict.keys(),
-             index=1)
+             index=9)
 tickers = str(ticker_dict.get(tickers)) + '.T'
 interval = st.selectbox('時間軸',
                     ['1m', '5m'])

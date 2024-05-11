@@ -3,29 +3,10 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta, time
 
-# 銘柄リストとデータの取得、保存
-ticker_dict = {
-    '' : '',
-    '東京エレクトロン' : '8035',
-    '霞ヶ関' : '3498',
-    'アドバンテスト' : '6857',
-    'ソシオネクスト' : '6526',
-    'リクルート' : '6098',
-    'QPS' : '5595',
-    'ルネサス' : '6723',
-    'レーザーテック' : '6920',
-    'ディスコ' : '6146',
-    '日経レバダブル' : '1579',
-    'さくらインターネット' : '3778',
-    'SBG': '9984',
-    '名村造船所' : '7014',
-    '川崎汽船' : '9107',
-    '日本郵船' : '9101',
-    '三井E&S' : '7003',
-    '売れるネット広告社' : '9235',
-    'ispace' : '9348',
-    '住石HD' : '1514',
-}
+# tickerリストの読み込み
+df = pd.read_csv('tickers.csv', index_col=0)
+df['code'] = df['code'].astype(str)
+ticker_dict = df.to_dict()['code']
 
 
 # 日付の取得

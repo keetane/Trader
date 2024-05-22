@@ -173,3 +173,4 @@ for ticker in list(ticker_dict.values()):
 
     # データを保存
     df.drop_duplicates().to_csv('./1day/' + ticker + '.csv')
+# %%

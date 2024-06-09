@@ -25,14 +25,19 @@ for file in file_list:
     dft['注文日時'] = dft['注文日時'].apply(lambda dt: dt.replace(year=2024))
     # '注文日時'カラムをインデックスに設定
     dft.set_index('注文日時', inplace=True)
-    # dft['約定単価[円]'] = dft['約定単価[円]'].str.replace('-', '').astype(float)
+    # 文字列のみの行を削除
+    dft = dft[dft['約定単価[円]'] != '-']
+    # 文字列を数値に変換
     dft['約定単価[円]'] = dft['約定単価[円]'].str.replace(',', '').astype(float)
     dft['現在値[円]'] = dft['現在値[円]'].str.replace(',', '').astype(float)
+    try:
+        dft['約定数量[株/口]'] = dft['約定数量[株/口]'].str.replace(',','').astype(float)
+    except AttributeError:
+        pass  # '約定数量[株/口]'列が文字列を含まない場合、何もせずにスキップします
     his = pd.concat([his, dft])
 
 his = his.drop_duplicates().sort_index(ascending=False)
-# his.to_csv('./history/history.csv')
-# his
+his.to_csv('./history/history.csv')
 
 #%%
 # 直近1週間の日付のselect list

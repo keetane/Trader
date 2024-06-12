@@ -46,23 +46,6 @@ when = st.selectbox(
     [str(date) for date in pd.unique(his.index.date).tolist()][0:5]
 )
 
-# #%%
-# # 今日の日付を取得
-# today = datetime.now().date()
-# this_week = datetime.now() - timedelta(weeks=1)
-# this_week = this_week.strftime('%Y-%m-%d')
-# # 今日から1週間前までの日付リストを生成
-# date_range = pd.date_range(this_week, today).tolist()
-
-# # Streamlitのセレクトボックスで日付を選択できるようにする
-# when = st.selectbox('日付を選択してください:', date_range)
-
-# # # 日付選択
-# # when = st.selectbox(
-# #     'Select date',
-# #     df['day'].unique(),
-# #     # index=None,
-# # )
 
 # 今日の日付に該当するデータを抽出
 columns=['注文番号', '銘柄', '銘柄コード・市場', '取引', '売買', '約定数量[株/口]', '注文単価[円]', '約定単価[円]', '約定代金[円]']
@@ -74,17 +57,8 @@ companies_dict = {i: company for i, company in enumerate(his['銘柄'].unique(),
 
 st.text('今日の売買回数は' + str(len(his)))
 Ticker = st.selectbox('今日の売買銘柄', companies_dict.values())
-# his
-
 
 #%%
-
-# print('抽出する銘柄の番号を入力')
-# ticker = input(companies_dict)
-
-
-#%%
-
 # パラメータを入力
 # # tickerリストの読み込み
 ticker_dict = pd.read_csv('tickers.csv', index_col=0).to_dict()['code']
@@ -92,9 +66,6 @@ tickers = str(ticker_dict.get(Ticker)) + '.T'
 interval = st.selectbox('時間軸',
                     ['1m', '5m'])
 
-# 基本情報取得
-info = yf.Ticker(tickers)
-st.write(tickers)
 
 #%%
 # 1分足のデータを取得
@@ -125,14 +96,13 @@ df['day'] = [t.date() for t in df.index]
 df['delta'] = df['Close'].diff()
 df['%'] = df['Close'].pct_change() * 100
 
-# 前日との差を計算
-df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
-df['delta_yd'] = df['Close'] - df['Close_-1']
-df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
+# # 前日との差を計算
+# df['Close_-1'] = df['day'].map(lambda x : data['Close_-1'][str(x)])
+# df['delta_yd'] = df['Close'] - df['Close_-1']
+# df['pct_yd'] = df['delta_yd']/df['Close_-1']*100
 
 
 df = df.loc[when]
-# st.write('前日株価終値 ' + str(df['Close'].iloc[-1]))
 
 # 分足の選択
 if interval == '1m':
@@ -142,7 +112,37 @@ else:
     df = df.between_time('09:00', '11:30')
     length = 31
 
+# scatter plot用のデータフレーム
+df_scatter = his[his['銘柄']==Ticker]
 
+# マーカーの色と形を設定する関数
+def set_color(row):
+    if row['売買'] == '買建':
+        return 'green'
+    elif row['売買'] == '売埋':
+        return 'green'
+    elif row['売買'] == '売建':
+        return 'red'
+    elif row['売買'] == '買埋':
+        return 'red'
+    else:
+        return ''  # デフォルトのマーカー
+
+def set_marker(row):
+    if row['売買'] == '買建':
+        return 'triangle-up'
+    elif row['売買'] == '売埋':
+        return 'circle'
+    elif row['売買'] == '売建':
+        return 'triangle-down'
+    elif row['売買'] == '買埋':
+        return 'circle'
+    else:
+        return ''  # デフォルトのマーカー
+
+# DataFrameの各行に対してマーカーの設定を適用
+df_scatter['color'] = df_scatter.apply(set_color, axis=1)
+df_scatter['marker'] = df_scatter.apply(set_marker, axis=1)
 
 
 # サブプロットを作成
@@ -155,20 +155,21 @@ fig.add_trace(go.Candlestick(x=df.index,
                 open=df['Open'],
                 high=df['High'],
                 low=df['Low'],
-                close=df['Close']), row=1, col=1)
+                close=df['Close'],
+                ), row=1, col=1)
 
-# # scatter plotを追加
-# fig.add_trace(go.Scatter(x=df_scatter.index, y=df_scatter['約定単価[円]'], 
-#                          mode='markers',
-#                          marker=dict(size=df_scatter['約定数量[株/口]'],
-#                                      sizemode='area',  # サイズを面積として解釈
-#                                      sizeref=2.*max(df_scatter['約定数量[株/口]'])/(20.**2),  # サイズスケーリングのための参照値
-#                                      sizemin=1,  # マーカーの最小サイズ
-#                                      color=df_scatter['color'],  # マーカーの色
-#                                      symbol=df_scatter['marker']  # マーカーの形
-#                                      )),
-#                                       row=1, col=1
-#                                       )
+# scatter plotを追加
+fig.add_trace(go.Scatter(x=df_scatter.index, y=df_scatter['約定単価[円]'], 
+                         mode='markers',
+                         marker=dict(size=df_scatter['約定数量[株/口]'],
+                                     sizemode='area',  # サイズを面積として解釈
+                                     sizeref=2.*max(df_scatter['約定数量[株/口]'])/(20.**2),  # サイズスケーリングのための参照値
+                                     sizemin=1,  # マーカーの最小サイズ
+                                     color=df_scatter['color'],  # マーカーの色
+                                     symbol=df_scatter['marker']  # マーカーの形
+                                     )),
+                                      row=1, col=1
+                                      )
 
 # histgramを追加
 fig.add_trace(go.Bar(
@@ -185,5 +186,9 @@ fig.update_yaxes(title_text="価格", row=1, col=1)
 fig.update_yaxes(title_text="出来高", row=2, col=1)
 fig.update_layout(xaxis_rangeslider_visible=False)
 
+# レイアウトの設定
+layout = go.Layout(
+    hovermode='closest',  # カーソルが最も近いデータポイントにホバーするように設定
+)
 # グラフを表示
 st.plotly_chart(fig)

@@ -9,35 +9,56 @@ import glob
 
 st.title('Day Analyzer')
 
-# 履歴のファイルを読み込み
-his = pd.read_csv('./history/history.csv',
-                    parse_dates=['注文日時'], 
-                    index_col='注文日時'
-                    )
+# # 履歴のファイルを読み込み
+# his = pd.read_csv('./history/history.csv',
+#                     parse_dates=['注文日時'], 
+#                     index_col='注文日時'
+#                     )
 
-# DLしたファイルの読み込み
-file_list = glob.glob('../../Downloads/stockorder(JP)_*')
-for file in file_list:
-    dft = pd.read_csv(file, encoding='cp932')
-    # '注文日時'カラムをdatetimeに変換
-    dft['注文日時'] = pd.to_datetime(dft['注文日時'], format='%m/%d %H:%M')
-    # 注文日時の年を2024年に変更
-    dft['注文日時'] = dft['注文日時'].apply(lambda dt: dt.replace(year=2024))
-    # '注文日時'カラムをインデックスに設定
-    dft.set_index('注文日時', inplace=True)
-    # 文字列のみの行を削除
-    dft = dft[dft['約定単価[円]'] != '-']
-    # 文字列を数値に変換
-    dft['約定単価[円]'] = dft['約定単価[円]'].str.replace(',', '').astype(float)
-    dft['現在値[円]'] = dft['現在値[円]'].str.replace(',', '').astype(float)
-    try:
-        dft['約定数量[株/口]'] = dft['約定数量[株/口]'].str.replace(',','').astype(float)
-    except AttributeError:
-        pass  # '約定数量[株/口]'列が文字列を含まない場合、何もせずにスキップします
-    his = pd.concat([his, dft])
+# # DLしたファイルの読み込み
+# file_list = glob.glob('../../Downloads/stockorder(JP)_*')
+# for file in file_list:
+#     dft = pd.read_csv(file, encoding='cp932')
+#     # '注文日時'カラムをdatetimeに変換
+#     dft['注文日時'] = pd.to_datetime(dft['注文日時'], format='%m/%d %H:%M')
+#     # 注文日時の年を2024年に変更
+#     dft['注文日時'] = dft['注文日時'].apply(lambda dt: dt.replace(year=2024))
+#     # '注文日時'カラムをインデックスに設定
+#     dft.set_index('注文日時', inplace=True)
+#     # 文字列のみの行を削除
+#     dft = dft[dft['約定単価[円]'] != '-']
+#     # 文字列を数値に変換
+#     dft['約定単価[円]'] = dft['約定単価[円]'].str.replace(',', '').astype(float)
+#     dft['現在値[円]'] = dft['現在値[円]'].str.replace(',', '').astype(float)
+#     try:
+#         dft['約定数量[株/口]'] = dft['約定数量[株/口]'].str.replace(',','').astype(float)
+#     except AttributeError:
+#         pass  # '約定数量[株/口]'列が文字列を含まない場合、何もせずにスキップします
+#     his = pd.concat([his, dft])
 
-his = his.drop_duplicates().sort_index(ascending=False)
-his.to_csv('./history/history.csv')
+# his = his.drop_duplicates().sort_index(ascending=False)
+# his.to_csv('./history/history.csv')
+
+
+# アップロード版のテスト
+his = st.file_uploader('注文履歴のcsvファイルをアップロードしてください。', type='csv')
+his = pd.read_csv(
+    his, 
+    encoding='cp932', 
+    # parse_dates=['注文日時'], 
+    # index_col='注文日時'
+    ).sort_index(ascending=True)
+try:
+    his['約定数量[株/口]'] = his['約定数量[株/口]'].str.replace(',','').astype(float)
+except AttributeError:
+    pass  # '約定数量[株/口]'列が文字列を含まない場合、何もせずにスキップします
+
+# '注文日時'カラムをdatetimeに変換
+his['注文日時'] = pd.to_datetime(his['注文日時'], format='%m/%d %H:%M')
+# 注文日時の年を2024年に変更
+his['注文日時'] = his['注文日時'].apply(lambda dt: dt.replace(year=2024))
+# '注文日時'カラムをインデックスに設定
+his.set_index('注文日時', inplace=True)
 
 #%%
 # 直近1週間の日付のselect list

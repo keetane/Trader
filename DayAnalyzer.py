@@ -53,10 +53,12 @@ his.sort_index(inplace=True)
 his = his.loc[when][columns]
 
 # enumerateを使用してインデックスと要素のペアを取得し、辞書に変換
-companies_dict = {i: company for i, company in enumerate(his['銘柄'].unique(), 1)}
+# companies_dict = {i: company for i, company in enumerate(his['銘柄'].unique(), 1)}
+companies_dict = {row['銘柄']:row['銘柄コード・市場'][:4] for index, row in his[['銘柄', '銘柄コード・市場']].drop_duplicates().iterrows()}
+
 
 st.text('今日の売買回数は' + str(len(his)))
-Ticker = st.selectbox('今日の売買銘柄', companies_dict.values())
+Ticker = st.selectbox('今日の売買銘柄', companies_dict.keys())
 
 #%%
 # パラメータを入力
